@@ -1,6 +1,7 @@
-//Interneuron Synapse
+//BEGIN LICENSE BLOCK 
+//Interneuron Autonomic
 
-//Copyright(C) 2019  Interneuron CIC
+//Copyright(C) 2021  Interneuron CIC
 
 //This program is free software: you can redistribute it and/or modify
 //it under the terms of the GNU General Public License as published by
@@ -16,6 +17,8 @@
 
 //You should have received a copy of the GNU General Public License
 //along with this program.If not, see<http://www.gnu.org/licenses/>.
+//END LICENSE BLOCK 
+
 
 using System;
 
@@ -45,6 +48,11 @@ namespace Interneuron.Autonomic.Models
         public string tempunits { get; set; }
         public string scaletype { get; set; }
         public string score_id { get; set; }
+
+        //PEWS specific
+        public bool? concern { get; set; } //
+        public string respdistress { get; set; }
+        public Double? hr { get; set; }
 
     }
 }

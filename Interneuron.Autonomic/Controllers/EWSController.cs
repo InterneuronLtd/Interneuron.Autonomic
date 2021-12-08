@@ -1,6 +1,7 @@
-﻿//Interneuron Synapse
+//BEGIN LICENSE BLOCK 
+//Interneuron Autonomic
 
-//Copyright(C) 2019  Interneuron CIC
+//Copyright(C) 2021  Interneuron CIC
 
 //This program is free software: you can redistribute it and/or modify
 //it under the terms of the GNU General Public License as published by
@@ -16,10 +17,14 @@
 
 //You should have received a copy of the GNU General Public License
 //along with this program.If not, see<http://www.gnu.org/licenses/>.
+//END LICENSE BLOCK 
+
 
 using System;
+using System.Collections.Generic;
 using Interneuron.Autonomic.Models;
 using Interneuron.Autonomic.Services;
+using Interneuron.Autonomic.Helpers;
 using InterneuronAutonomic.API;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -40,18 +45,36 @@ namespace Interneuron.Autonomic.Controllers
 
         [HttpGet]
         [Route("[action]/{observationEventId}")]
-        public ActionResult<string> CalculateNEWS2(string observationEventId)
+        public ActionResult<string> CalculateEWS(string observationEventId)
         {
 
-            // Get Observation Event via autonomic_observationevent baseview and the DynamicAPI client.
+            EWSResponse ewsResponse = new EWSResponse();
 
+            // Get Observation Event via autonomic_observationevent baseview and the DynamicAPI client.
             string obsEventJson = _dynamicAPIClient.GetBaseViewListObjectByAttribute("autonomic_observationevent", "observationevent_id", observationEventId);
 
             // Deserialize json to ObservationEvent model
             ObservationEvent obsEvent = JsonConvert.DeserializeObject<ObservationEvent>(obsEventJson);
 
-            // Invoke the EWSCalculator service which returns an EWSResponse
-            EWSResponse ewsResponse = EWSCalculator.CalculateNEWS2Score(obsEvent);
+            // Invoke the EWSCalculator service which returns an EWSResponse for the relevant scale type.
+            if (obsEvent.scaletype == "NEWS2-Scale1" || obsEvent.scaletype == "NEWS2-Scale2")
+            {
+                //NEWS2 scale
+                ewsResponse = EWSCalculator.CalculateNEWS2Score(obsEvent);
+            }
+            else if (obsEvent.scaletype == "PEWS-0To11Mo" || obsEvent.scaletype == "PEWS-1To4Yrs" || obsEvent.scaletype == "PEWS-5To12Yrs" || obsEvent.scaletype == "PEWS-13To18Yrs")
+            {
+                //PEWS scale
+                ewsResponse = EWSCalculator.CalculatePEWSScore(obsEvent);
+            }
+            else
+            {
+                //Not a valid scale type
+                ewsResponse.status = "ERROR";
+                ewsResponse.error = "Could not find a valid scale type for this Observation Event";
+                ewsResponse.score = null;
+            }
+            
 
             var useridClaim = User.FindFirst("IPUId");
             var userId = "unknown";
@@ -59,7 +82,7 @@ namespace Interneuron.Autonomic.Controllers
             if (useridClaim != null)
             {
                 userId = useridClaim.Value;
-            }   
+            }
 
             if (ewsResponse.status == "SUCCESS")
             {
@@ -76,10 +99,23 @@ namespace Interneuron.Autonomic.Controllers
                 ewsScore.calculateddatetime = ewsResponse.score_datetime;
                 ewsScore.calculatedsystem = "Interneuron.Autonomic";
 
-                string postResponse = _dynamicAPIClient.PostObject("core", "score", ewsScore);
+                //Create Score Parameter List
+                List<ScoreParameter> ewsScoreParamList = new List<ScoreParameter>();
+
+                ewsScoreParamList = EWSHelper.CopyEWSScoreParameterList(ewsResponse.parameters, ewsResponse.score_id, ewsResponse.observationevent_id);
+
+                // post the score to the dynamic API
+                string scoreResponse = _dynamicAPIClient.PostObject("core", "score", ewsScore);
+
+                // delete existing scoreparameters
+                string scoreParamDeleteResponse = _dynamicAPIClient.DeleteObjectByAttribute("core", "scoreparameter", "score_id", ewsResponse.score_id);
+
+                // persist the new score parameters
+                string scoreParamResponse = _dynamicAPIClient.PostObjectArray("core", "scoreparameter", ewsScoreParamList);
             }
 
             return JsonConvert.SerializeObject(ewsResponse);
         }
+
     }
 }
