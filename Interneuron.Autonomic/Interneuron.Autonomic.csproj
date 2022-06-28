@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net6.0</TargetFramework>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
     <AssemblyName>Interneuron.Autonomic</AssemblyName>
     <RootNamespace>InterneuronAutonomic</RootNamespace>
@@ -14,22 +14,12 @@
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="IdentityServer4.AccessTokenValidation" Version="3.0.1" />
-    <PackageReference Include="Microsoft.AspNetCore.App">
-      <PrivateAssets Condition="'%(PackageReference.Version)' == ''">all</PrivateAssets>
-      <Publish Condition="'%(PackageReference.Version)' == ''">true</Publish>
-    </PackageReference>
-    <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
     <PackageReference Include="SynapseDynamicAPIClient" Version="0.0.4.0" />
   </ItemGroup>
 
   <ItemGroup>
     <Folder Include="Helpers\" />
     <Folder Include="Lib\" />
-  </ItemGroup>
-  <ItemGroup>
-    <Reference Include="SynapseDynamicAPIClient">
-      <HintPath>Lib\SynapseDynamicAPIClient.dll</HintPath>
-      <IncludeInPackage>true</IncludeInPackage>
-    </Reference>
   </ItemGroup>
 </Project>
