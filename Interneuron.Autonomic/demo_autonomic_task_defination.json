@@ -1,0 +1,30 @@
+{
+    "family": "demo-autonomic",
+    "taskRoleArn": "",
+    "executionRoleArn": "arn:aws:iam::114918358738:role/ecsTaskExecutionRole",
+   
+    "containerDefinitions": [
+        {
+            "name": "ecs-demo-autonomic",
+            "image": "114918358738.dkr.ecr.eu-west-2.amazonaws.com/demo-autonomicapi:tag",
+           
+           
+            "portMappings": [
+                {
+                    "hostPort": 0,
+                    "protocol": "tcp",
+                    "containerPort": 80
+                }
+            ]
+          
+        }
+    ],
+
+    "requiresCompatibilities": [
+        "EC2"
+    ],
+    "cpu": "500",
+    "memory": "1024",
+    "pidMode": "task",
+    "ipcMode": "task"
+}

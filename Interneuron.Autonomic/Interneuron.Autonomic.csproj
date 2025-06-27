@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
-    <TargetFramework>net6.0</TargetFramework>
+    <TargetFramework>net8.0</TargetFramework>
     <AspNetCoreHostingModel>InProcess</AspNetCoreHostingModel>
     <AssemblyName>Interneuron.Autonomic</AssemblyName>
     <RootNamespace>InterneuronAutonomic</RootNamespace>
@@ -9,13 +9,19 @@
 
   <PropertyGroup Condition=" '$(RunConfiguration)' == 'Interneuron.Autonomic' ">
     <StartAction>Project</StartAction>
-    <LaunchUrl>api/values</LaunchUrl>
+    <LaunchUrl>swagger/index.html</LaunchUrl>
     <ApplicationURL>http://localhost:5002</ApplicationURL>
   </PropertyGroup>
   <ItemGroup>
+    <PackageReference Include="AspNetCore.HealthChecks.UI.Client" Version="8.0.1" />
+    <PackageReference Include="Elastic.Apm.NetCoreAll" Version="1.28.0" />
     <PackageReference Include="IdentityServer4.AccessTokenValidation" Version="3.0.1" />
-    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
-    <PackageReference Include="SynapseDynamicAPIClient" Version="0.0.4.0" />
+    <PackageReference Include="Interneuron.Common" Version="6.0.0" />
+    <PackageReference Include="Interneuron.Web.Exceptions" Version="6.0.0" />
+    <PackageReference Include="Interneuron.Web.Logger" Version="6.0.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.7.0" />
+    <PackageReference Include="SynapseDynamicAPIClient" Version="27.0.0" />
   </ItemGroup>
 
   <ItemGroup>

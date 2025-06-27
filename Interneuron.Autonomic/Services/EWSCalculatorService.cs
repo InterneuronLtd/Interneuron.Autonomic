@@ -1,7 +1,7 @@
 //BEGIN LICENSE BLOCK 
 //Interneuron Autonomic
 
-//Copyright(C) 2023  Interneuron Holdings Ltd
+//Copyright(C) 2025  Interneuron Limited
 
 //This program is free software: you can redistribute it and/or modify
 //it under the terms of the GNU General Public License as published by
@@ -18,12 +18,30 @@
 //You should have received a copy of the GNU General Public License
 //along with this program.If not, see<http://www.gnu.org/licenses/>.
 //END LICENSE BLOCK 
+//Interneuron Synapse
 
+//Copyright(C) 2023  Interneuron Holdings Ltd
+
+//This program is free software: you can redistribute it and/or modify
+//it under the terms of the GNU General Public License as published by
+//the Free Software Foundation, either version 3 of the License, or
+//(at your option) any later version.
+
+//This program is distributed in the hope that it will be useful,
+//but WITHOUT ANY WARRANTY; without even the implied warranty of
+//MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+
+//See the
+//GNU General Public License for more details.
+
+//You should have received a copy of the GNU General Public License
+//along with this program.If not, see<http://www.gnu.org/licenses/>.
 
 using System;
 using Interneuron.Autonomic.Models;
 using Interneuron.Autonomic.Helpers;
 using System.Collections.Generic;
+using System.Reflection.Metadata.Ecma335;
 
 namespace Interneuron.Autonomic.Services
 {
@@ -33,7 +51,7 @@ namespace Interneuron.Autonomic.Services
         // CalculateNEWS2Score
         // Requires Resp, Spo2, SBP, Pulse, COnscious Level, Temp and Scale Type to calculate aggregate score.
         // Returns EWSResponse object with Error/Success status flag and ErrorMessage/Guidance.
-        public static EWSResponse CalculateNEWS2Score(ObservationEvent observationEvent)
+        public static EWSResponse CalculateNEWS2Score(ObservationEvent observationEvent, bool allowPartial)
         {
             EWSResponse ewsResponse = new EWSResponse();
             ewsResponse.parameters = new List<EWSResponseScoreParameter>();
@@ -56,10 +74,10 @@ namespace Interneuron.Autonomic.Services
             ewsResponse.score_datetime = DateTime.Now;
 
             // check we have a complete set of observations
-            if (String.IsNullOrEmpty(observationEvent.resp.ToString()) || String.IsNullOrEmpty(observationEvent.spo2.ToString()) ||
+            if ((String.IsNullOrEmpty(observationEvent.resp.ToString()) || String.IsNullOrEmpty(observationEvent.spo2.ToString()) ||
                 String.IsNullOrEmpty(observationEvent.bps.ToString()) || String.IsNullOrEmpty(observationEvent.acvpu) ||
                 String.IsNullOrEmpty(observationEvent.pulse.ToString()) || String.IsNullOrEmpty(observationEvent.scaletype) ||
-                String.IsNullOrEmpty(observationEvent.temp.ToString()))
+                String.IsNullOrEmpty(observationEvent.temp.ToString())) && !allowPartial)
             {
                 ewsResponse.status = "ERROR";
                 ewsResponse.error = "Observation event does not contain a full set of observations, unable to calculate score.";
@@ -69,7 +87,7 @@ namespace Interneuron.Autonomic.Services
 
 
             // respiratory units
-            if (ValidationHelper.IsValidWholeNumber((Double)observationEvent.resp))
+            if (!String.IsNullOrEmpty(observationEvent.resp.ToString()) && ValidationHelper.IsValidWholeNumber((Double)observationEvent.resp))
             {
                 if (observationEvent.resp <= 8)
                 {
@@ -94,6 +112,10 @@ namespace Interneuron.Autonomic.Services
                     ewsResponse.parameters.Add(EWSHelper.CreateScoreParam("resp", 3, observationEvent.resp.ToString()));
                 }
             }
+            else if(allowPartial && String.IsNullOrEmpty(observationEvent.resp.ToString()))
+            {
+                //skip & do nothing
+            }
             else
             {
                 // Raise error - null resp rate provided
@@ -105,7 +127,7 @@ namespace Interneuron.Autonomic.Services
 
             //Sp02 - SCALE 1
             //TODO: Confirm value for SCALE1
-            if(observationEvent.scaletype == "NEWS2-Scale1" && ValidationHelper.IsValidWholeNumber((Double)observationEvent.spo2))
+            if(observationEvent.scaletype == "NEWS2-Scale1" && !String.IsNullOrEmpty(observationEvent.spo2.ToString()) && ValidationHelper.IsValidWholeNumber((Double)observationEvent.spo2))
             {
                 if (observationEvent.spo2 <= 91)
                 {
@@ -125,7 +147,7 @@ namespace Interneuron.Autonomic.Services
                 }
                 
             }
-            else if (observationEvent.scaletype == "NEWS2-Scale2" && ValidationHelper.IsValidWholeNumber((Double)observationEvent.spo2))
+            else if (observationEvent.scaletype == "NEWS2-Scale2" && !String.IsNullOrEmpty(observationEvent.spo2.ToString()) && ValidationHelper.IsValidWholeNumber((Double)observationEvent.spo2))
             {
                 if (observationEvent.spo2 <= 83)
                 {
@@ -161,6 +183,10 @@ namespace Interneuron.Autonomic.Services
                 }
 
             }
+            else if (allowPartial && String.IsNullOrEmpty(observationEvent.spo2.ToString()))
+            {
+                //skip & do nothing
+            }
             else
             {
                 // Raise error, null value
@@ -180,7 +206,7 @@ namespace Interneuron.Autonomic.Services
 
             //Systolic Blood Pressure
             // Requires Units to be present as this calculation is based on mmHg.
-            if (ValidationHelper.IsValidWholeNumber((Double)observationEvent.bps))
+            if (!String.IsNullOrEmpty(observationEvent.bps.ToString()) && ValidationHelper.IsValidWholeNumber((Double)observationEvent.bps))
             {
                 if (observationEvent.bps <= 90)
                 {
@@ -206,6 +232,10 @@ namespace Interneuron.Autonomic.Services
                 }
 
             }
+            else if (allowPartial && String.IsNullOrEmpty(observationEvent.bps.ToString()))
+            {
+                //skip & do nothing
+            }
             else
             {
                 //
@@ -216,7 +246,7 @@ namespace Interneuron.Autonomic.Services
             }
 
             //Pulse
-            if (ValidationHelper.IsValidWholeNumber((Double)observationEvent.pulse))
+            if (!String.IsNullOrEmpty(observationEvent.pulse.ToString()) && ValidationHelper.IsValidWholeNumber((Double)observationEvent.pulse))
             {
                 if (observationEvent.pulse <= 40)
                 {
@@ -245,7 +275,10 @@ namespace Interneuron.Autonomic.Services
                     ewsResponse.parameters.Add(EWSHelper.CreateScoreParam("pulse", 3, observationEvent.pulse.ToString()));
                     redScoreIndicator = true;
                 }
-
+            }
+            else if (allowPartial && String.IsNullOrEmpty(observationEvent.pulse.ToString()))
+            {
+                //skip & do nothing
             }
             else
             {
@@ -257,7 +290,7 @@ namespace Interneuron.Autonomic.Services
 
 
             //Conscious Level
-            if (String.IsNullOrEmpty(observationEvent.acvpu.ToString()) == false)
+            if (!String.IsNullOrEmpty(observationEvent.acvpu) && String.IsNullOrEmpty(observationEvent.acvpu.ToString()) == false)
             {
                 if (observationEvent.acvpu.ToUpper() == "A")
                 {
@@ -295,6 +328,10 @@ namespace Interneuron.Autonomic.Services
                     return ewsResponse;
                 }
             }
+            else if (allowPartial && String.IsNullOrEmpty(observationEvent.acvpu))
+            {
+                //skip & do nothing
+            }
             else
             {
                 ewsResponse.status = "ERROR";
@@ -328,6 +365,10 @@ namespace Interneuron.Autonomic.Services
                 }
 
             }
+            else if (allowPartial && String.IsNullOrEmpty(observationEvent.temp.ToString()))
+            {
+                //skip & do nothing
+            }
             else
             {
                 ewsResponse.status = "ERROR";
@@ -337,7 +378,14 @@ namespace Interneuron.Autonomic.Services
             }
 
             // Add guidance
-            if (ewsResponse.score >= 7)
+            if(ewsResponse.score == 0 && allowPartial && ewsResponse.parameters.Count == 0 && String.IsNullOrEmpty(observationEvent.resp.ToString()) && 
+                String.IsNullOrEmpty(observationEvent.spo2.ToString()) && String.IsNullOrEmpty(observationEvent.bps.ToString()) && String.IsNullOrEmpty(observationEvent.acvpu) &&
+                String.IsNullOrEmpty(observationEvent.pulse.ToString()) && String.IsNullOrEmpty(observationEvent.temp.ToString()))
+            {
+                ewsResponse.score = null;
+                ewsResponse.guidance = null;
+            }
+            else if (ewsResponse.score >= 7)
             {
                 ewsResponse.guidance = "HIGH CLINICAL RISK - URGENT OR EMERGENCY RESPONSE!";
             }
